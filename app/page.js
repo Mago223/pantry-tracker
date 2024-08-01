@@ -27,6 +27,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
+  const [itemQuantity, setItemQuantity] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
   const updateInventory = async () => {
@@ -42,15 +43,17 @@ export default function Home() {
     setInventory(inventoryList);
   };
 
-  const addItem = async (item) => {
-    const docRef = doc(collection(firestore, "inventory"), item);
+  const addItem = async (itemName, quantity = 1) => {
+    const docRef = doc(collection(firestore, "inventory"), itemName);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      const { quantity } = docSnap.data();
-      await setDoc(docRef, { quantity: quantity + 1 });
+      const currentData = docSnap.data();
+      const currentQuantity = currentData.quantity || 0;
+      const updatedQuantity = currentQuantity + quantity;
+      await setDoc(docRef, { quantity: updatedQuantity }, { merge: true });
     } else {
-      await setDoc(docRef, { quantity: 1 });
+      await setDoc(docRef, { quantity: quantity });
     }
 
     await updateInventory();
@@ -89,10 +92,10 @@ export default function Home() {
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
-      gap={2}
+      gap={3}
       sx={{
         background:
-          "linear-gradient(179.4deg, rgb(253, 240, 233) 2.2%, rgb(255, 194, 203) 96.2%)",
+          "linear-gradient(to right, rgb(182, 244, 146), rgb(51, 139, 147))",
       }}
     >
       <Modal open={open} onClose={handleClose}>
@@ -102,32 +105,49 @@ export default function Home() {
           left="50%"
           width={400}
           bgcolor="white"
-          border="2px solid #000"
+          borderRadius={2}
           boxShadow={24}
           p={4}
           display="flex"
           flexDirection="column"
           gap={3}
           sx={{
-            transform: "translate(-50%,-50%)",
+            transform: "translate(-50%, -50%)",
           }}
         >
-          <Typography variant="h6">Add Item</Typography>
-          <Stack width="100%" direction="row" spacing={2}>
+          <Typography variant="h6" fontWeight="bold">
+            Add Item
+          </Typography>
+          <Stack width="100%" direction="column" spacing={2}>
             <TextField
+              label="Item Name"
               variant="outlined"
               fullWidth
               value={itemName}
-              onChange={(e) => {
-                setItemName(e.target.value);
-              }}
+              onChange={(e) => setItemName(e.target.value)}
+            />
+            <TextField
+              label="Quantity"
+              type="number"
+              variant="outlined"
+              fullWidth
+              value={itemQuantity}
+              onChange={(e) => setItemQuantity(Number(e.target.value))} // Ensure quantity is a number
             />
             <Button
-              variant="outlined"
+              variant="contained"
               onClick={() => {
-                addItem(itemName);
+                addItem(itemName, itemQuantity); // Use custom quantity from modal
                 setItemName("");
+                setItemQuantity(1); // Reset quantity to default value
                 handleClose();
+              }}
+              sx={{
+                backgroundColor: "#32de84",
+                color: "#333",
+                "&:hover": {
+                  backgroundColor: "#28c76f",
+                },
               }}
             >
               Add
@@ -138,14 +158,15 @@ export default function Home() {
 
       <Stack
         direction="column"
-        spacing={2}
+        spacing={3}
         alignItems="center"
         marginBottom={2}
+        sx={{ width: "80%", maxWidth: 800 }}
       >
         <TextField
           variant="outlined"
           fullWidth
-          placeholder="Search inventory"
+          placeholder="Search Pantry"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
@@ -155,34 +176,59 @@ export default function Home() {
               </InputAdornment>
             ),
           }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": {
+                borderColor: "#32de84",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#32de84",
+              },
+            },
+          }}
         />
         <Button
           variant="contained"
           onClick={() => {
             handleOpen();
           }}
+          sx={{
+            backgroundColor: "#32de84",
+            color: "#fff",
+            "&:hover": {
+              backgroundColor: "#28c76f",
+            },
+            padding: "10px 20px",
+            borderRadius: 2,
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          }}
         >
           Add New Item
         </Button>
       </Stack>
-      <Box border="1px solid #333" borderRadius="16px 16px 0 0">
+      <Box
+        border="1px solid #333"
+        borderRadius="16px"
+        overflow="hidden"
+        boxShadow="0px 4px 6px rgba(0, 0, 0, 0.1)"
+        sx={{ width: "80%", maxWidth: 800 }}
+      >
         <Box
-          width="800px"
+          width="100%"
           height="100px"
-          bgcolor="#ADD8E6"
+          bgcolor="#32de84"
           display="flex"
           alignItems="center"
           justifyContent="center"
-          borderRadius="16px 16px 0 0"
         >
-          <Typography variant="h2" color="#333">
+          <Typography variant="h4" color="#fff" fontWeight="bold">
             Pantry Tracker
           </Typography>
         </Box>
 
         <Stack
-          width="800px"
-          height="300px"
+          width="100%"
+          maxHeight="400px"
           spacing={2}
           overflow="auto"
           sx={{
@@ -190,12 +236,11 @@ export default function Home() {
               width: "0.4em",
             },
             "&::-webkit-scrollbar-track": {
-              boxShadow: "inset 0 0 6px rgba(0,0,0,0.00)",
-              webkitBoxShadow: "inset 0 0 6px rgba(0,0,0,0.00)",
+              boxShadow: "inset 0 0 6px rgba(0,0,0,0.1)",
             },
             "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "rgba(0,0,0,0.5)",
-              outline: "1px solid #333",
+              backgroundColor: "rgba(0,0,0,0.3)",
+              borderRadius: 2,
             },
           }}
         >
@@ -203,33 +248,45 @@ export default function Home() {
             <Box
               key={name}
               width="100%"
-              minHeight="150px"
+              minHeight="80px"
               display="flex"
               alignItems="center"
               justifyContent="space-between"
-              bgcolor="#f0f0f0"
-              padding={5}
+              bgcolor="#fff"
+              padding={2}
+              borderBottom="1px solid #ddd"
+              sx={{
+                "&:last-child": {
+                  borderBottom: "none",
+                },
+              }}
             >
-              <Typography variant="h3" color="#333" textAlign="center">
+              <Typography variant="h6" color="#333">
                 {name.charAt(0).toUpperCase() + name.slice(1)}
               </Typography>
 
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={2} alignItems="center">
                 <Button
-                  variant="contained"
+                  variant="text"
                   onClick={() => {
                     addItem(name);
+                  }}
+                  sx={{
+                    color: "#32de84",
                   }}
                 >
                   <AddIcon />
                 </Button>
-                <Typography variant="h3" color="#333" textAlign="center">
+                <Typography variant="h6" color="#333">
                   {quantity}
                 </Typography>
                 <Button
-                  variant="contained"
+                  variant="text"
                   onClick={() => {
                     removeItem(name);
+                  }}
+                  sx={{
+                    color: "#f44336",
                   }}
                 >
                   <RemoveIcon />
