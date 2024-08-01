@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { firestore } from "@/firebase";
 import {
@@ -9,7 +8,11 @@ import {
   Stack,
   TextField,
   Typography,
+  InputAdornment,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import {
   collection,
   query,
@@ -24,6 +27,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
@@ -70,6 +74,10 @@ export default function Home() {
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+  const filteredInventory = inventory.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   useEffect(() => {
     updateInventory();
   }, []);
@@ -82,6 +90,10 @@ export default function Home() {
       justifyContent="center"
       alignItems="center"
       gap={2}
+      sx={{
+        background:
+          "linear-gradient(179.4deg, rgb(253, 240, 233) 2.2%, rgb(255, 194, 203) 96.2%)",
+      }}
     >
       <Modal open={open} onClose={handleClose}>
         <Box
@@ -123,15 +135,37 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
-      <Button
-        variant="contained"
-        onClick={() => {
-          handleOpen();
-        }}
+
+      <Stack
+        direction="column"
+        spacing={2}
+        alignItems="center"
+        marginBottom={2}
       >
-        Add New Item
-      </Button>
-      <Box border="1px solid #333">
+        <TextField
+          variant="outlined"
+          fullWidth
+          placeholder="Search inventory"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Button
+          variant="contained"
+          onClick={() => {
+            handleOpen();
+          }}
+        >
+          Add New Item
+        </Button>
+      </Stack>
+      <Box border="1px solid #333" borderRadius="16px 16px 0 0">
         <Box
           width="800px"
           height="100px"
@@ -139,14 +173,33 @@ export default function Home() {
           display="flex"
           alignItems="center"
           justifyContent="center"
+          borderRadius="16px 16px 0 0"
         >
           <Typography variant="h2" color="#333">
-            Inventory Items
+            Pantry Tracker
           </Typography>
         </Box>
 
-        <Stack width="800px" height="300px" spacing={2} overflow="auto">
-          {inventory.map(({ name, quantity }) => (
+        <Stack
+          width="800px"
+          height="300px"
+          spacing={2}
+          overflow="auto"
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "0.4em",
+            },
+            "&::-webkit-scrollbar-track": {
+              boxShadow: "inset 0 0 6px rgba(0,0,0,0.00)",
+              webkitBoxShadow: "inset 0 0 6px rgba(0,0,0,0.00)",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "rgba(0,0,0,0.5)",
+              outline: "1px solid #333",
+            },
+          }}
+        >
+          {filteredInventory.map(({ name, quantity }) => (
             <Box
               key={name}
               width="100%"
@@ -160,9 +213,7 @@ export default function Home() {
               <Typography variant="h3" color="#333" textAlign="center">
                 {name.charAt(0).toUpperCase() + name.slice(1)}
               </Typography>
-              <Typography variant="h3" color="#333" textAlign="center">
-                {quantity}
-              </Typography>
+
               <Stack direction="row" spacing={2}>
                 <Button
                   variant="contained"
@@ -170,15 +221,18 @@ export default function Home() {
                     addItem(name);
                   }}
                 >
-                  Add
+                  <AddIcon />
                 </Button>
+                <Typography variant="h3" color="#333" textAlign="center">
+                  {quantity}
+                </Typography>
                 <Button
                   variant="contained"
                   onClick={() => {
                     removeItem(name);
                   }}
                 >
-                  Remove
+                  <RemoveIcon />
                 </Button>
               </Stack>
             </Box>
