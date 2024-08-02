@@ -169,7 +169,10 @@ export default function Home() {
               variant="outlined"
               fullWidth
               value={itemQuantity}
-              onChange={(e) => setItemQuantity(Number(e.target.value))} // Ensure quantity is a number
+              onChange={(e) =>
+                setItemQuantity(Math.max(1, parseInt(e.target.value) || 0))
+              }
+              inputProps={{ min: 1 }}
             />
             <Button
               variant="contained"
@@ -234,6 +237,10 @@ export default function Home() {
             <Stack width="100%" direction="column" spacing={2}>
               {recipeSuggestions.map((suggestion, index) => {
                 const [recipeName, searchLink] = suggestion.split(",");
+                // Extract the actual URL from the searchLink
+                const linkMatch = searchLink.match(/\bhttps?:\/\/\S+/gi);
+                const cleanLink = linkMatch ? linkMatch[0] : searchLink.trim();
+
                 return (
                   <Box key={index} bgcolor="#f5f5f5" p={2} borderRadius={1}>
                     <Typography
@@ -246,7 +253,7 @@ export default function Home() {
                     </Typography>
                     <Typography
                       component="a"
-                      href={searchLink.trim()}
+                      href={cleanLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
@@ -354,7 +361,7 @@ export default function Home() {
             boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
           }}
         >
-          {isLoading ? "Loading..." : "Get Recipe Suggestions"}
+          {isLoading ? "Loading..." : "Get Recipe Suggestion"}
         </Button>
       </Stack>
       <Box
