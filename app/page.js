@@ -22,6 +22,12 @@ import {
   setDoc,
   doc,
 } from "firebase/firestore";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, // Note: Using NEXT_PUBLIC is not secure
+  dangerouslyAllowBrowser: true, // This is necessary but not recommended for production
+});
 
 export default function Home() {
   const [inventory, setInventory] = useState([]);
@@ -29,6 +35,34 @@ export default function Home() {
   const [itemName, setItemName] = useState("");
   const [itemQuantity, setItemQuantity] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [recipeModalOpen, setRecipeModalOpen] = useState(false);
+  const [recipeSuggestions, setRecipeSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const getRecipeSuggestions = async () => {
+    setIsLoading(true);
+    try {
+      const ingredients = inventory.map((item) => item.name);
+      const prompt = `Generate one recipe using some of these ingredients: ${ingredients.join(
+        ", "
+      )}. Provide only the recipe name and a Google search link.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+      });
+
+      setRecipeSuggestions([completion.choices[0].message.content]);
+    } catch (error) {
+      console.error("Error getting recipe suggestions:", error);
+      setRecipeSuggestions([
+        "Failed to get recipe suggestions. Please try again.",
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
@@ -155,6 +189,46 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+      <Modal open={recipeModalOpen} onClose={() => setRecipeModalOpen(false)}>
+        <Box
+          position="absolute"
+          top="50%"
+          left="50%"
+          width={400}
+          bgcolor="white"
+          borderRadius={2}
+          boxShadow={24}
+          p={4}
+          display="flex"
+          flexDirection="column"
+          gap={3}
+          sx={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold">
+            Recipe Suggestions
+          </Typography>
+          <Stack width="100%" direction="column" spacing={2}>
+            {recipeSuggestions.map((suggestion, index) => (
+              <Typography key={index}>{suggestion}</Typography>
+            ))}
+          </Stack>
+          <Button
+            variant="contained"
+            onClick={() => setRecipeModalOpen(false)}
+            sx={{
+              backgroundColor: "#32de84",
+              color: "#333",
+              "&:hover": {
+                backgroundColor: "#28c76f",
+              },
+            }}
+          >
+            Close
+          </Button>
+        </Box>
+      </Modal>
 
       <Stack
         direction="column"
@@ -204,6 +278,29 @@ export default function Home() {
           }}
         >
           Add New Item
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => {
+            getRecipeSuggestions();
+            setRecipeModalOpen(true);
+          }}
+          disabled={isLoading}
+          sx={{
+            backgroundColor: "#32de84",
+            color: "#fff",
+            "&:hover": {
+              backgroundColor: "#28c76f",
+            },
+            "&:disabled": {
+              backgroundColor: "#a0a0a0",
+            },
+            padding: "10px 20px",
+            borderRadius: 2,
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          {isLoading ? "Loading..." : "Get Recipe Suggestions"}
         </Button>
       </Stack>
       <Box
