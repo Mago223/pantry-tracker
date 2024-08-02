@@ -9,6 +9,9 @@ import {
   TextField,
   Typography,
   InputAdornment,
+  CircularProgress,
+  Divider,
+  Link,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -45,7 +48,7 @@ export default function Home() {
       const ingredients = inventory.map((item) => item.name);
       const prompt = `Generate one recipe using some of these ingredients: ${ingredients.join(
         ", "
-      )}. Provide only the recipe name and a Google search link.`;
+      )}. Provide only the recipe name and a Google search link seperated by a comma.`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -204,25 +207,76 @@ export default function Home() {
           gap={3}
           sx={{
             transform: "translate(-50%, -50%)",
+            maxWidth: "80%",
+            maxHeight: "80%",
+            overflow: "auto",
           }}
         >
-          <Typography variant="h6" fontWeight="bold">
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            color="#32de84"
+            textAlign="center"
+          >
             Recipe Suggestions
           </Typography>
-          <Stack width="100%" direction="column" spacing={2}>
-            {recipeSuggestions.map((suggestion, index) => (
-              <Typography key={index}>{suggestion}</Typography>
-            ))}
-          </Stack>
+          <Divider />
+          {isLoading ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              py={4}
+            >
+              <CircularProgress color="success" />
+            </Box>
+          ) : (
+            <Stack width="100%" direction="column" spacing={2}>
+              {recipeSuggestions.map((suggestion, index) => {
+                const [recipeName, searchLink] = suggestion.split(",");
+                return (
+                  <Box key={index} bgcolor="#f5f5f5" p={2} borderRadius={1}>
+                    <Typography
+                      variant="h6"
+                      color="#333"
+                      gutterBottom
+                      textAlign="center"
+                    >
+                      {recipeName.trim()}
+                    </Typography>
+                    <Typography
+                      component="a"
+                      href={searchLink.trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        color: "#32de84",
+                        textDecoration: "none",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                        display: "block",
+                        textAlign: "center",
+                      }}
+                    >
+                      View Recipe
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Stack>
+          )}
           <Button
             variant="contained"
             onClick={() => setRecipeModalOpen(false)}
             sx={{
               backgroundColor: "#32de84",
-              color: "#333",
+              color: "#fff",
               "&:hover": {
                 backgroundColor: "#28c76f",
               },
+              alignSelf: "center",
+              mt: 2,
             }}
           >
             Close
