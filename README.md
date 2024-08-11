@@ -38,7 +38,7 @@ Pantry Tracker is built using modern web technologies:
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/yourusername/pantry-tracker.git
+   git clone https://github.com/mago223/pantry-tracker.git
    cd pantry-tracker
 
    ```
